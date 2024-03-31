@@ -28,11 +28,11 @@ The fastest way to deploy a restful api's with [Gin Framework](https://github.co
 ### Installation
 
 ```
-$ go get github.com/Massad/gin-boilerplate
+$ go get github.com/GagulProject/go-whisky
 ```
 
 ```
-$ cd $GOPATH/src/github.com/Massad/gin-boilerplate
+$ cd $REPO_PATH/go-whisky
 ```
 
 ```

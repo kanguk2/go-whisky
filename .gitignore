@@ -10,8 +10,8 @@
 
 # SENSITVE DATA #
 .gitconfig
-.env
 cert/
 
 # BUILD #
 ./gin-boilerplate
+.idea
