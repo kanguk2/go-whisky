@@ -2,24 +2,21 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"runtime"
-
 	"github.com/Massad/gin-boilerplate/controllers"
 	"github.com/Massad/gin-boilerplate/db"
 	"github.com/Massad/gin-boilerplate/forms"
 	"github.com/gin-contrib/gzip"
 	uuid "github.com/google/uuid"
 	"github.com/joho/godotenv"
+	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 )
 
-//CORSMiddleware ...
-//CORS (Cross-Origin Resource Sharing)
+// CORSMiddleware ...
+// CORS (Cross-Origin Resource Sharing)
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost")
@@ -38,8 +35,8 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-//RequestIDMiddleware ...
-//Generate a unique ID and attach it to each request for future reference or use
+// RequestIDMiddleware ...
+// Generate a unique ID and attach it to each request for future reference or use
 func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uuid := uuid.New()
@@ -50,8 +47,8 @@ func RequestIDMiddleware() gin.HandlerFunc {
 
 var auth = new(controllers.AuthController)
 
-//TokenAuthMiddleware ...
-//JWT Authentication middleware attached to each request that needs to be authenitcated to validate the access_token in the header
+// TokenAuthMiddleware ...
+// JWT Authentication middleware attached to each request that needs to be authenitcated to validate the access_token in the header
 func TokenAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth.TokenValid(c)
@@ -115,17 +112,27 @@ func main() {
 
 	r.LoadHTMLGlob("./public/html/*")
 
-	r.Static("/public", "./public")
+	/*
+		r.Static("/public", "./public")
 
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"ginBoilerplateVersion": "v0.03",
-			"goVersion":             runtime.Version(),
+		r.GET("/", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "index.html", gin.H{
+				"ginBoilerplateVersion": "v0.03",
+				"goVersion":             runtime.Version(),
+			})
 		})
-	})
 
+		r.NoRoute(func(c *gin.Context) {
+			c.HTML(404, "404.html", gin.H{})
+		})
+	*/
+
+	// React 앱의 정적 파일 서빙
+	r.Static("/static", "./frontend/build/static")
+
+	// React 앱의 진입점 서빙
 	r.NoRoute(func(c *gin.Context) {
-		c.HTML(404, "404.html", gin.H{})
+		c.File("./frontend/build/index.html")
 	})
 
 	port := os.Getenv("PORT")
