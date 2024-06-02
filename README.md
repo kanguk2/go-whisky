@@ -43,12 +43,19 @@ $ go mod init
 $ go install
 ```
 
+### Prerequisites
+- Install flyway
+    ```bash
+    $ brew install flyway
+    ```
+
 You will find the **database.sql** in `db/database.sql`
 
 And you can import the postgres database using this command:
 
-```
-$ psql -U postgres -h localhost < ./db/database.sql
+```shell
+$ createuser -s -l -h localhost -p 5432 -U postgres go_whisky
+$ createdb -E UTF8 -T template0 --lc-collate=C --lc-ctype=en_US.UTF-8 -h localhost -p 5432 -U go_whisky go_whisky
 ```
 
 Tip:
