@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/Massad/gin-boilerplate/controllers"
 	"github.com/Massad/gin-boilerplate/db"
 	"github.com/Massad/gin-boilerplate/forms"
 	"github.com/gin-contrib/gzip"
 	uuid "github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -79,7 +80,7 @@ func main() {
 
 	//Start PostgreSQL database
 	//Example: db.GetDB() - More info in the models folder
-	db.Init()
+	//db.Init()
 
 	//Start Redis on database 1 - it's used to store the JWT but you can use it for anythig else
 	//Example: db.GetRedis().Set(KEY, VALUE, at.Sub(now)).Err()
@@ -108,6 +109,9 @@ func main() {
 		v1.GET("/article/:id", TokenAuthMiddleware(), article.One)
 		v1.PUT("/article/:id", TokenAuthMiddleware(), article.Update)
 		v1.DELETE("/article/:id", TokenAuthMiddleware(), article.Delete)
+
+		whisky := new(controllers.WhiskyController)
+		v1.GET("/whisky/ping", whisky.Pong)
 	}
 
 	r.LoadHTMLGlob("./public/html/*")
@@ -154,5 +158,4 @@ func main() {
 	} else {
 		r.Run(":" + port)
 	}
-
 }
