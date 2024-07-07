@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"go.uber.org/fx"
 	"log"
-	"net/http"
 	"os"
-	"runtime"
 
 	"github.com/Massad/gin-boilerplate/controllers"
 	"github.com/Massad/gin-boilerplate/db"
@@ -130,6 +128,7 @@ func invokeServer() fx.Option {
 			})
 		})
 
+
 		r.NoRoute(func(c *gin.Context) {
 			c.HTML(404, "404.html", gin.H{})
 		})
@@ -154,4 +153,5 @@ func invokeServer() fx.Option {
 			r.Run(":" + port)
 		}
 	})
+
 }
