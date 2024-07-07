@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"go.uber.org/fx"
 	"log"
 	"os"
 
@@ -58,65 +59,66 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 }
 
 func main() {
-	//Load the .env file
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("error: failed to load the env file")
-	}
+	fx.New(invokeServer()).Run()
+}
 
-	if os.Getenv("ENV") == "PRODUCTION" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+func invokeServer() fx.Option {
+	return fx.Invoke(func() {
+		//Load the .env file
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Fatal("error: failed to load the env file")
+		}
 
-	//Start the default gin server
-	r := gin.Default()
+		if os.Getenv("ENV") == "PRODUCTION" {
+			gin.SetMode(gin.ReleaseMode)
+		}
 
-	//Custom form validator
-	binding.Validator = new(forms.DefaultValidator)
+		//Start the default gin server
+		r := gin.Default()
 
-	r.Use(CORSMiddleware())
-	r.Use(RequestIDMiddleware())
-	r.Use(gzip.Gzip(gzip.DefaultCompression))
+		//Custom form validator
+		binding.Validator = new(forms.DefaultValidator)
 
-	//Start PostgreSQL database
-	//Example: db.GetDB() - More info in the models folder
-	//db.Init()
+		r.Use(CORSMiddleware())
+		r.Use(RequestIDMiddleware())
+		r.Use(gzip.Gzip(gzip.DefaultCompression))
 
-	//Start Redis on database 1 - it's used to store the JWT but you can use it for anythig else
-	//Example: db.GetRedis().Set(KEY, VALUE, at.Sub(now)).Err()
-	db.InitRedis(1)
+		//Start PostgreSQL database
+		//Example: db.GetDB() - More info in the models folder
+		db.Init()
 
-	v1 := r.Group("/v1")
-	{
-		/*** START USER ***/
-		user := new(controllers.UserController)
+		//Start Redis on database 1 - it's used to store the JWT but you can use it for anythig else
+		//Example: db.GetRedis().Set(KEY, VALUE, at.Sub(now)).Err()
+		db.InitRedis(1)
 
-		v1.POST("/user/login", user.Login)
-		v1.POST("/user/register", user.Register)
-		v1.GET("/user/logout", user.Logout)
+		v1 := r.Group("/v1")
+		{
+			/*** START USER ***/
+			user := new(controllers.UserController)
 
-		/*** START AUTH ***/
-		auth := new(controllers.AuthController)
+			v1.POST("/user/login", user.Login)
+			v1.POST("/user/register", user.Register)
+			v1.GET("/user/logout", user.Logout)
 
-		//Refresh the token when needed to generate new access_token and refresh_token for the user
-		v1.POST("/token/refresh", auth.Refresh)
+			/*** START AUTH ***/
+			auth := new(controllers.AuthController)
 
-		/*** START Article ***/
-		article := new(controllers.ArticleController)
+			//Refresh the token when needed to generate new access_token and refresh_token for the user
+			v1.POST("/token/refresh", auth.Refresh)
 
-		v1.POST("/article", TokenAuthMiddleware(), article.Create)
-		v1.GET("/articles", TokenAuthMiddleware(), article.All)
-		v1.GET("/article/:id", TokenAuthMiddleware(), article.One)
-		v1.PUT("/article/:id", TokenAuthMiddleware(), article.Update)
-		v1.DELETE("/article/:id", TokenAuthMiddleware(), article.Delete)
+			/*** START Article ***/
+			article := new(controllers.ArticleController)
 
-		whisky := new(controllers.WhiskyController)
-		v1.GET("/whisky/ping", whisky.Pong)
-	}
+			v1.POST("/article", TokenAuthMiddleware(), article.Create)
+			v1.GET("/articles", TokenAuthMiddleware(), article.All)
+			v1.GET("/article/:id", TokenAuthMiddleware(), article.One)
+			v1.PUT("/article/:id", TokenAuthMiddleware(), article.Update)
+			v1.DELETE("/article/:id", TokenAuthMiddleware(), article.Delete)
+		}
 
-	r.LoadHTMLGlob("./public/html/*")
+		r.LoadHTMLGlob("./public/html/*")
 
-	/*
 		r.Static("/public", "./public")
 
 		r.GET("/", func(c *gin.Context) {
@@ -126,36 +128,30 @@ func main() {
 			})
 		})
 
+
 		r.NoRoute(func(c *gin.Context) {
 			c.HTML(404, "404.html", gin.H{})
 		})
-	*/
 
-	// React 앱의 정적 파일 서빙
-	r.Static("/static", "./frontend/build/static")
+		port := os.Getenv("PORT")
 
-	// React 앱의 진입점 서빙
-	r.NoRoute(func(c *gin.Context) {
-		c.File("./frontend/build/index.html")
+		log.Printf("\n\n PORT: %s \n ENV: %s \n SSL: %s \n Version: %s \n\n", port, os.Getenv("ENV"), os.Getenv("SSL"), os.Getenv("API_VERSION"))
+
+		if os.Getenv("SSL") == "TRUE" {
+
+			//Generated using sh generate-certificate.sh
+			SSLKeys := &struct {
+				CERT string
+				KEY  string
+			}{
+				CERT: "./cert/myCA.cer",
+				KEY:  "./cert/myCA.key",
+			}
+
+			r.RunTLS(":"+port, SSLKeys.CERT, SSLKeys.KEY)
+		} else {
+			r.Run(":" + port)
+		}
 	})
 
-	port := os.Getenv("PORT")
-
-	log.Printf("\n\n PORT: %s \n ENV: %s \n SSL: %s \n Version: %s \n\n", port, os.Getenv("ENV"), os.Getenv("SSL"), os.Getenv("API_VERSION"))
-
-	if os.Getenv("SSL") == "TRUE" {
-
-		//Generated using sh generate-certificate.sh
-		SSLKeys := &struct {
-			CERT string
-			KEY  string
-		}{
-			CERT: "./cert/myCA.cer",
-			KEY:  "./cert/myCA.key",
-		}
-
-		r.RunTLS(":"+port, SSLKeys.CERT, SSLKeys.KEY)
-	} else {
-		r.Run(":" + port)
-	}
 }
